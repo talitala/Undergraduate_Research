@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game of LAIfe</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        #timer-container {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        #elapsed-timer {
+            font-size: 24px; /* Adjust the font size as needed */
+            font-weight: bold;
+        }
+
+        #game-container {
+            text-align: center;
+        }
+
+        #bars-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bar {
+            margin-bottom: 10px;
+        }
+
+        .bar-label {
+            margin-right: 10px;
+        }
+
+        .bar-fill {
+            background-color: green; /* Default color for the progress bar */
+            transition: width 0.5s; /* Smooth transition for width changes */
+        }
+
+        .bar-level {
+            margin-left: 10px;
+        }
+
+        .bar-fill.low {
+            background-color: yellow; /* Color when below 50% */
+        }
+
+        .bar-fill.very-low {
+            background-color: red; /* Color when below 20% */
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="timer-container">
+            <span id="elapsed-timer">00:00:00</span>
+            <button id="play-button" onclick="startIntervals()">Play</button>
+        </div>
+        <h1>Hello, {{ player_name }}!</h1>
+        <div id="bars-container">
+            <div class="bar" id="hunger-bar">
+                <span class="bar-label">Hunger:</span>
+                <div class="bar-fill" id="hunger-fill" style="width: 100%;"></div>
+                <span class="bar-level" id="hunger-level">100%</span>
+            </div>
+            <div class="bar" id="thirst-bar">
+                <span class="bar-label">Thirst:</span>
+                <div class="bar-fill" id="thirst-fill" style="width: 100%;"></div>
+                <span class="bar-level" id="thirst-level">100%</span>
+            </div>
+            <div class="bar" id="social-bar">
+                <span class="bar-label">Social:</span>
+                <div class="bar-fill" id="social-fill" style="width: 100%;"></div>
+                <span class="bar-level" id="social-level">100%</span>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
