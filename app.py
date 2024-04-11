@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-
+import random 
+import time
 app = Flask(__name__)
 
 # Initial values for bars
@@ -65,10 +66,20 @@ def perform_action(action):
         'social': social
     })
 
-def get_random_value():
-    # Get a random value between 5 and 15
-    import random
-    return random.randint(5, 15)
+# Simulation function
+def simulation():
+    global hunger, thirst, social
+    while True:
+        # Randomly perform actions
+        action = random.choice(['eat', 'drink', 'call'])
+        if action == 'eat':
+            hunger += 20
+        elif action == 'drink':
+            thirst += 20
+        elif action == 'call':
+            social += 20
+        # Update every 5 seconds
+        time.sleep(5)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -20,39 +20,18 @@
             font-weight: bold;
         }
 
-        #game-container {
+        .button-container {
             text-align: center;
+            margin-top: 20px;
         }
 
-        #bars-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .bar {
-            margin-bottom: 10px;
-        }
-
-        .bar-label {
-            margin-right: 10px;
-        }
-
-        .bar-fill {
-            background-color: green; /* Default color for the progress bar */
-            transition: width 0.5s; /* Smooth transition for width changes */
-        }
-
-        .bar-level {
-            margin-left: 10px;
-        }
-
-        .bar-fill.low {
-            background-color: yellow; /* Color when below 50% */
-        }
-
-        .bar-fill.very-low {
-            background-color: red; /* Color when below 20% */
+        .action-button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -79,6 +58,16 @@
                 <div class="bar-fill" id="social-fill" style="width: 100%;"></div>
                 <span class="bar-level" id="social-level">100%</span>
             </div>
+        </div>
+        <div class="button-container">
+            <button id="increase-hunger-button" class="action-button">Increase Hunger</button>
+            <span id="hunger-counter">0</span>
+            <button id="increase-thirst-button" class="action-button">Increase Thirst</button>
+            <span id="thirst-counter">0</span>
+            <button id="increase-social-button" class="action-button">Increase Social</button>
+            <span id="social-counter">0</span>
+            <button id="simulator-button">Simulator</button>
+            <div id="click-rate-container"></div> <!-- Container for displaying click rates -->
         </div>
     </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>

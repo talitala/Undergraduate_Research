@@ -1,56 +1,52 @@
 // Initialize variables
 let elapsedSeconds = 0;
 let playButtonClicked = false;
+let hungerClicks = 0;
+let thirstClicks = 0;
+let socialClicks = 0;
+let lastHungerClickTime = 0;
+let lastThirstClickTime = 0;
+let lastSocialClickTime = 0;
 
-// Update progress bars and check game over condition
 // Update progress bars and check game over condition
 function updateBars(data) {
     updateBar("hunger-fill", "hunger-level", data.hunger);
     updateBar("thirst-fill", "thirst-level", data.thirst);
     updateBar("social-fill", "social-level", data.social);
 
-    // Check if either hunger or thirst is at 0%
-    if (data.hunger === 0 || data.thirst === 0) {
+    // Check if any bar reaches 0%
+    if (data.hunger === 0 || data.thirst === 0 || data.social === 0) {
         stopGame();
-    } else {
-        // Check if all bars are at 0%
-        if (data.hunger === 0 && data.thirst === 0 && data.social === 0) {
-            stopGame();
-        }
     }
-
-    // Update color classes based on fill percentages
-    updateColorClass("hunger-fill", data.hunger);
-    updateColorClass("thirst-fill", data.thirst);
-    updateColorClass("social-fill", data.social);
 }
+
 
 // Update individual progress bar and its corresponding level indicator
 function updateBar(fillId, levelId, value) {
     const fill = document.getElementById(fillId);
     const level = document.getElementById(levelId);
 
-    // Preserve the current percentage of the other bars
-    const currentWidth = parseFloat(fill.style.width) || 0;
     const newValue = Math.max(0, Math.min(value, 100));
 
-    // If the new value is less than the current width, use the new value; otherwise, use the current width
-    const newWidth = newValue < currentWidth ? newValue : currentWidth;
+    fill.style.width = newValue + "%";
+    level.textContent = newValue + "%";
 
-    fill.style.width = newWidth + "%";
-    level.textContent = newWidth + "%";
+    // Change color based on threshold
+    updateColorClass(fill, newValue);
 }
 
-// Update color classes based on fill percentage
-function updateColorClass(barId, fillPercentage) {
-    const bar = document.getElementById(barId);
+// Update color class based on threshold
+function updateColorClass(fill, value) {
+    fill.classList.remove('low');
+    fill.classList.remove('normal');
+    fill.classList.remove('high');
 
-    bar.classList.remove("low", "very-low"); // Remove existing classes
-
-    if (fillPercentage < 50 && fillPercentage >= 20) {
-        bar.classList.add("low"); // Add low class for yellow color
-    } else if (fillPercentage < 20) {
-        bar.classList.add("very-low"); // Add very-low class for red color
+    if (value <= 30) {
+        fill.classList.add('low');
+    } else if (value <= 70) {
+        fill.classList.add('normal');
+    } else {
+        fill.classList.add('high');
     }
 }
 
@@ -64,8 +60,6 @@ function startIntervals() {
             elapsedSeconds++;
             updateStopwatch();
             checkGameOver();
-            const needs = assessNeeds();
-            aiDecision(needs); // Call the AI decision function
         }
     }, 1000);
 
@@ -94,66 +88,6 @@ function startIntervals() {
     }, 8000);
 }
 
-// Assess AI character's needs based on hunger, thirst, and social levels
-function assessNeeds() {
-    const hunger = parseFloat(document.getElementById('hunger-fill').style.width);
-    const thirst = parseFloat(document.getElementById('thirst-fill').style.width);
-    const social = parseFloat(document.getElementById('social-fill').style.width);
-
-    return { hunger, thirst, social };
-}
-
-// AI Decision-Making
-function aiDecision(needs) {
-    const hungerThreshold = 30;
-    const thirstThreshold = 30;
-    const socialThreshold = 30;
-
-    const isHungerLow = needs.hunger < hungerThreshold || document.getElementById('hunger-fill').classList.contains('low');
-    const isThirstLow = needs.thirst < thirstThreshold || document.getElementById('thirst-fill').classList.contains('low');
-    const isSocialLow = needs.social < socialThreshold || document.getElementById('social-fill').classList.contains('low');
-
-    if (isHungerLow) {
-        performActionAndDisplayMessage('eat', 'The AI has eaten');
-    } else if (isThirstLow) {
-        performActionAndDisplayMessage('drink', 'The AI has drunk');
-    } else if (isSocialLow) {
-        performActionAndDisplayMessage('call', 'The AI has socialized');
-    } else {
-        // If all needs are relatively satisfied, perform a default action or no action
-        // performDefaultAction();
-    }
-}
-
-// Perform actions and display messages
-function performActionAndDisplayMessage(action, message) {
-    performAction(action);
-    displayMessage(message);
-}
-
-// Display message on the screen
-function displayMessage(message) {
-    const messageContainer = document.getElementById('message-container');
-    messageContainer.textContent = message;
-
-    // Clear the message after a few seconds
-    setTimeout(() => {
-        messageContainer.textContent = '';
-    }, 3000);
-}
-
-// Stop the game, display "GAME OVER!", and hide the play button
-function stopGame() {
-    playButtonClicked = false;
-    document.getElementById('elapsed-timer').textContent = "GAME OVER!";
-    document.getElementById('elapsed-timer').style.color = "red";
-
-    // Remove the play button
-    const playButton = document.getElementById('play-button');
-    playButton.classList.add('hidden');
-    playButton.removeEventListener('click', startIntervals);
-}
-
 // Update the stopwatch display
 function updateStopwatch() {
     const stopwatch = document.getElementById('elapsed-timer');
@@ -173,11 +107,39 @@ function formatTime(value) {
     return value < 10 ? `0${value}` : value;
 }
 
+function runSim() {
+    setInterval(() => {
+        const randomAction = Math.floor(Math.random() * 3); // Generate random number from 0 to 2
+        switch (randomAction) {
+            case 0:
+                performAction('increaseHunger', 20);
+                hungerClicks++; // Increment hunger clicks
+                calculateClickRate('Hunger', lastHungerClickTime);
+                lastHungerClickTime = Date.now();
+                document.getElementById('hunger-counter').textContent = hungerClicks; // Update displayed counter
+                break;
+            case 1:
+                performAction('increaseThirst', 20);
+                thirstClicks++; // Increment thirst clicks
+                calculateClickRate('Thirst', lastThirstClickTime);
+                lastThirstClickTime = Date.now();
+                document.getElementById('thirst-counter').textContent = thirstClicks; // Update displayed counter
+                break;
+            case 2:
+                performAction('increaseSocial', 20);
+                socialClicks++; // Increment social clicks
+                calculateClickRate('Social', lastSocialClickTime);
+                lastSocialClickTime = Date.now();
+                document.getElementById('social-counter').textContent = socialClicks; // Update displayed counter
+                break;
+            default:
+                break;
+        }
+    }, 5000); // Run simulation every 5 seconds
+}
 // Perform actions (e.g., decrease hunger, thirst, social)
-// Perform actions (e.g., decrease hunger, thirst, social)
-function performAction(action) {
+function performAction(action, value) {
     const maxDecrease = 10; // Maximum percentage to decrease
-    const maxIncrease = 20; // Maximum percentage to increase
 
     let newHunger = parseFloat(document.getElementById('hunger-fill').style.width);
     let newThirst = parseFloat(document.getElementById('thirst-fill').style.width);
@@ -199,31 +161,65 @@ function performAction(action) {
         newSocial = Math.max(0, newSocial - decreaseAmountSocial);
     }
 
-    // Increase the corresponding bar by 20%
-    if (action === 'eat') {
-        newHunger = Math.min(100, newHunger + maxIncrease);
+    if (action === 'increaseHunger') {
+        newHunger = Math.min(100, newHunger + value);
     }
 
-    if (action === 'drink') {
-        newThirst = Math.min(100, newThirst + maxIncrease);
+    if (action === 'increaseThirst') {
+        newThirst = Math.min(100, newThirst + value);
     }
 
-    if (action === 'call') {
-        newSocial = Math.min(100, newSocial + maxIncrease);
+    if (action === 'increaseSocial') {
+        newSocial = Math.min(100, newSocial + value);
     }
 
     updateBars({ hunger: newHunger, thirst: newThirst, social: newSocial });
 }
 
-
-// Event listener for the play button
-document.getElementById('play-button').addEventListener('click', () => {
-    startIntervals();
-    document.getElementById('play-button').classList.add('hidden');
-});
-
-// Event listener for the stop button
-document.getElementById('stop-button').addEventListener('click', () => {
+// Stop the game, display "GAME OVER!", and hide the play button
+function stopGame() {
     playButtonClicked = false;
-    document.getElementById('play-button').classList.remove('hidden');
+    document.getElementById('elapsed-timer').textContent = "GAME OVER!";
+    document.getElementById('elapsed-timer').style.color = "red";
+
+    // Remove the play button
+    const playButton = document.getElementById('play-button');
+    playButton.classList.add('hidden');
+    playButton.removeEventListener('click', startIntervals);
+}
+
+// Calculate and display click rate
+function calculateClickRate(button, lastClickTime) {
+    const currentTime = Date.now();
+    const timeDifference = currentTime - lastClickTime;
+    const clickRate = timeDifference > 0 ? (1000 / timeDifference).toFixed(2) + " clicks/sec" : "N/A";
+
+    const clickRateContainer = document.getElementById('click-rate-container');
+    clickRateContainer.textContent = `Click rate (${button}): ${clickRate}`;
+}
+
+// Event listeners for the action buttons
+document.getElementById('increase-hunger-button').addEventListener('click', () => {
+    performAction('increaseHunger', 20);
+    hungerCounter++; // Increment hunger counter
+    document.getElementById('hunger-counter').textContent = hungerCounter; // Update displayed counter
 });
+
+document.getElementById('increase-thirst-button').addEventListener('click', () => {
+    performAction('increaseThirst', 20);
+    thirstCounter++; // Increment thirst counter
+    document.getElementById('thirst-counter').textContent = thirstCounter; // Update displayed counter
+});
+
+document.getElementById('increase-social-button').addEventListener('click', () => {
+    performAction('increaseSocial', 20);
+    socialCounter++; // Increment social counter
+    document.getElementById('social-counter').textContent = socialCounter; // Update displayed counter
+});
+
+// Event listener for the Simulator button
+document.getElementById('simulator-button').addEventListener('click', () => {
+    runSim();
+});
+
+

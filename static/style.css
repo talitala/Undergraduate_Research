@@ -1,34 +1,3 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f0f0f0;
-}
-
-#game-container {
-    max-width: 800px;
-    margin: 50px auto;
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.bar {
-    margin-bottom: 15px;
-}
-
-.bar-fill {
-    height: 20px;
-    background-color: green; /* Default color for bars */
-    border-radius: 4px;
-    transition: width 0.5s ease; /* Transition effect for bar fill width */
-}
-
-.bar-fill.low {
-    background-color: yellow; /* Color for low bars */
-}
-
 #timer-container {
     position: fixed;
     top: 0;
@@ -37,22 +6,81 @@ body {
     text-align: center;
 }
 
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+    font-size: 36px;
+    margin: 0;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
 #elapsed-timer {
     font-size: 24px; /* Adjust the font size as needed */
     font-weight: bold;
-    color: black; /* Color for the elapsed timer */
 }
 
-#play-button {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+.bar {
+    margin-bottom: 10px;
+}
+
+.bar-label {
+    display: block;
+    font-weight: bold;
+}
+
+.bar-fill {
+    height: 20px;
+    background-color: #4CAF50; /* Green by default */
+    width: 100%; /* Full width by default */
+    transition: width 0.3s ease-in-out; /* Smooth transition animation */
+}
+
+.bar-level {
+    display: block;
+    text-align: right;
+    margin-top: 5px;
+}
+
+.bar.low .bar-fill {
+    background-color: #FF9800; /* Orange for low level */
+}
+
+.bar.normal .bar-fill {
+    background-color: #4CAF50; /* Green for normal level */
+}
+
+.bar.high .bar-fill {
+    background-color: #F44336; /* Red for high level */
 }
 
 .hidden {
     display: none;
+}
+
+.button-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.action-button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
 }
