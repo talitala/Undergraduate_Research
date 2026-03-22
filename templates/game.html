@@ -2,74 +2,105 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game of LAIfe</title>
+    <title>Game of LAIfe &mdash; {{ player_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        #timer-container {
-            position: fixed;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-        }
-
-        #elapsed-timer {
-            font-size: 24px; /* Adjust the font size as needed */
-            font-weight: bold;
-        }
-
-        .button-container {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .action-button {
-            margin: 0 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-    </style>
 </head>
-<body>
-    <div id="game-container">
-        <div id="timer-container">
-            <span id="elapsed-timer">00:00:00</span>
-            <button id="play-button" onclick="startIntervals()">Play</button>
-        </div>
-        <h1>Hello, {{ player_name }}!</h1>
-        <div id="bars-container">
-            <div class="bar" id="hunger-bar">
-                <span class="bar-label">Hunger:</span>
-                <div class="bar-fill" id="hunger-fill" style="width: 100%;"></div>
-                <span class="bar-level" id="hunger-level">100%</span>
+<body class="page-game" data-hunger="{{ hunger }}" data-thirst="{{ thirst }}" data-social="{{ social }}">
+
+    <header>
+        <div class="logo">Game of <span>LAI</span>fe</div>
+        <div id="timer-display">00:00:00</div>
+        <div class="player-tag">player: <strong>{{ player_name }}</strong></div>
+    </header>
+
+    <main>
+        <!-- STAT BARS -->
+        <div class="stats-panel">
+            <div class="panel-label">// vital signs</div>
+
+            <div class="stat-card hunger" id="hunger-card">
+                <div class="stat-header">
+                    <span class="stat-name">Hunger</span>
+                    <span class="stat-value" id="hunger-value">{{ hunger }}%</span>
+                </div>
+                <div class="bar-track">
+                    <div class="bar-fill" id="hunger-fill" style="width: {{ hunger }}%;"></div>
+                </div>
+                <div class="stat-footer">
+                    <span class="stat-status" id="hunger-status">nominal</span>
+                    <span class="stat-clicks">fed: <span id="hunger-clicks">0</span>&times;</span>
+                </div>
             </div>
-            <div class="bar" id="thirst-bar">
-                <span class="bar-label">Thirst:</span>
-                <div class="bar-fill" id="thirst-fill" style="width: 100%;"></div>
-                <span class="bar-level" id="thirst-level">100%</span>
+
+            <div class="stat-card thirst" id="thirst-card">
+                <div class="stat-header">
+                    <span class="stat-name">Thirst</span>
+                    <span class="stat-value" id="thirst-value">{{ thirst }}%</span>
+                </div>
+                <div class="bar-track">
+                    <div class="bar-fill" id="thirst-fill" style="width: {{ thirst }}%;"></div>
+                </div>
+                <div class="stat-footer">
+                    <span class="stat-status" id="thirst-status">nominal</span>
+                    <span class="stat-clicks">hydrated: <span id="thirst-clicks">0</span>&times;</span>
+                </div>
             </div>
-            <div class="bar" id="social-bar">
-                <span class="bar-label">Social:</span>
-                <div class="bar-fill" id="social-fill" style="width: 100%;"></div>
-                <span class="bar-level" id="social-level">100%</span>
+
+            <div class="stat-card social" id="social-card">
+                <div class="stat-header">
+                    <span class="stat-name">Social</span>
+                    <span class="stat-value" id="social-value">{{ social }}%</span>
+                </div>
+                <div class="bar-track">
+                    <div class="bar-fill" id="social-fill" style="width: {{ social }}%;"></div>
+                </div>
+                <div class="stat-footer">
+                    <span class="stat-status" id="social-status">nominal</span>
+                    <span class="stat-clicks">called: <span id="social-clicks">0</span>&times;</span>
+                </div>
+            </div>
+
+            <!-- EVENT LOG -->
+            <div class="panel-label">// event log</div>
+            <div class="log-card" id="log"></div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="actions-panel">
+            <div class="control-card">
+                <div class="panel-label">// controls</div>
+                <button class="ctrl-btn" id="play-btn" onclick="startGame()">&#9654; Start Game</button>
+                <button class="ctrl-btn" id="sim-btn" onclick="startSim()" disabled>&#9889; Run Simulator</button>
+            </div>
+
+            <div class="action-card">
+                <h2>// take action</h2>
+                <div class="action-buttons">
+                    <button class="act-btn hunger-btn" id="eat-btn" onclick="doAction('eat', 'hunger')" disabled>
+                        <span class="btn-icon">&#127828;</span> Eat something
+                    </button>
+                    <button class="act-btn thirst-btn" id="drink-btn" onclick="doAction('drink', 'thirst')" disabled>
+                        <span class="btn-icon">&#128167;</span> Drink water
+                    </button>
+                    <button class="act-btn social-btn" id="call-btn" onclick="doAction('call', 'social')" disabled>
+                        <span class="btn-icon">&#128222;</span> Call a friend
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="button-container">
-            <button id="increase-hunger-button" class="action-button">Increase Hunger</button>
-            <span id="hunger-counter">0</span>
-            <button id="increase-thirst-button" class="action-button">Increase Thirst</button>
-            <span id="thirst-counter">0</span>
-            <button id="increase-social-button" class="action-button">Increase Social</button>
-            <span id="social-counter">0</span>
-            <button id="simulator-button">Simulator</button>
-            <div id="click-rate-container"></div> <!-- Container for displaying click rates -->
-        </div>
+    </main>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="game-over-overlay">
+        <div class="go-label">// session terminated</div>
+        <div class="go-title">GAME OVER</div>
+        <div class="go-score">survived for <span id="final-time">00:00:00</span></div>
+        <button class="go-restart" onclick="location.href='/'">&#8635; Play Again</button>
     </div>
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

@@ -1,225 +1,177 @@
-// Initialize variables
+// Game state — initial values injected from Flask via data attributes on <body>
 let elapsedSeconds = 0;
-let playButtonClicked = false;
-let hungerClicks = 0;
-let thirstClicks = 0;
-let socialClicks = 0;
-let lastHungerClickTime = 0;
-let lastThirstClickTime = 0;
-let lastSocialClickTime = 0;
+let running = false;
+let simRunning = false;
 
-// Update progress bars and check game over condition
+let hunger = parseInt(document.body.dataset.hunger);
+let thirst = parseInt(document.body.dataset.thirst);
+let social = parseInt(document.body.dataset.social);
+
+let hungerClicks = 0, thirstClicks = 0, socialClicks = 0;
+
+const actionBtns = ['eat-btn', 'drink-btn', 'call-btn'];
+
+// ── UTILITIES ──
+
+function formatTime(v) { return v < 10 ? `0${v}` : `${v}`; }
+
+function currentTimestamp() {
+    return formatTime(Math.floor(elapsedSeconds / 3600)) + ':' +
+           formatTime(Math.floor((elapsedSeconds % 3600) / 60)) + ':' +
+           formatTime(elapsedSeconds % 60);
+}
+
+function log(msg) {
+    const el = document.getElementById('log');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `<span class="ts">[${currentTimestamp()}]</span>${msg}`;
+    el.prepend(entry);
+}
+
+function updateTimerDisplay() {
+    const h = formatTime(Math.floor(elapsedSeconds / 3600));
+    const m = formatTime(Math.floor((elapsedSeconds % 3600) / 60));
+    const s = formatTime(elapsedSeconds % 60);
+    document.getElementById('timer-display').textContent = `${h}:${m}:${s}`;
+}
+
+// ── BAR UPDATES ──
+
 function updateBars(data) {
-    updateBar("hunger-fill", "hunger-level", data.hunger);
-    updateBar("thirst-fill", "thirst-level", data.thirst);
-    updateBar("social-fill", "social-level", data.social);
-
-    // Check if any bar reaches 0%
-    if (data.hunger === 0 || data.thirst === 0 || data.social === 0) {
-        stopGame();
-    }
+    hunger = data.hunger;
+    thirst = data.thirst;
+    social = data.social;
+    setBar('hunger', hunger);
+    setBar('thirst', thirst);
+    setBar('social', social);
+    if (hunger === 0 || thirst === 0 || social === 0) endGame();
 }
 
+function setBar(name, value) {
+    document.getElementById(`${name}-fill`).style.width = value + '%';
+    document.getElementById(`${name}-value`).textContent = value + '%';
 
-// Update individual progress bar and its corresponding level indicator
-function updateBar(fillId, levelId, value) {
-    const fill = document.getElementById(fillId);
-    const level = document.getElementById(levelId);
+    const card   = document.getElementById(`${name}-card`);
+    const status = document.getElementById(`${name}-status`);
 
-    const newValue = Math.max(0, Math.min(value, 100));
+    card.classList.toggle('critical', value <= 20);
 
-    fill.style.width = newValue + "%";
-    level.textContent = newValue + "%";
-
-    // Change color based on threshold
-    updateColorClass(fill, newValue);
+    if (value <= 20)      status.textContent = '⚠ critical';
+    else if (value <= 50) status.textContent = 'low';
+    else                  status.textContent = 'nominal';
 }
 
-// Update color class based on threshold
-function updateColorClass(fill, value) {
-    fill.classList.remove('low');
-    fill.classList.remove('normal');
-    fill.classList.remove('high');
+// ── GAME FLOW ──
 
-    if (value <= 30) {
-        fill.classList.add('low');
-    } else if (value <= 70) {
-        fill.classList.add('normal');
-    } else {
-        fill.classList.add('high');
-    }
-}
+function startGame() {
+    if (running) return;
+    running = true;
+    document.getElementById('play-btn').disabled = true;
+    document.getElementById('sim-btn').disabled  = false;
+    actionBtns.forEach(id => document.getElementById(id).disabled = false);
+    log('game started');
 
-// Start game intervals (timers)
-function startIntervals() {
-    playButtonClicked = true;
-
-    // Elapsed seconds timer
+    // Stopwatch
     setInterval(() => {
-        if (playButtonClicked) {
-            elapsedSeconds++;
-            updateStopwatch();
-            checkGameOver();
-        }
+        if (running) { elapsedSeconds++; updateTimerDisplay(); }
     }, 1000);
 
-    // Decrease hunger every 6 seconds
+    // Hunger decays every 6s
     setInterval(() => {
-        if (playButtonClicked) {
-            performAction('decreaseHunger', 100);
-            checkGameOver();
-        }
+        if (!running) return;
+        const amt = Math.min(10, Math.max(1, Math.floor(elapsedSeconds / 6)));
+        hunger = Math.max(0, hunger - amt);
+        syncBar('hunger', amt);
+        setBar('hunger', hunger);
+        if (hunger === 0) endGame();
     }, 6000);
 
-    // Decrease thirst every 4 seconds
+    // Thirst decays every 4s
     setInterval(() => {
-        if (playButtonClicked) {
-            performAction('decreaseThirst', 100);
-            checkGameOver();
-        }
+        if (!running) return;
+        const amt = Math.min(10, Math.max(1, Math.floor(elapsedSeconds / 4)));
+        thirst = Math.max(0, thirst - amt);
+        syncBar('thirst', amt);
+        setBar('thirst', thirst);
+        if (thirst === 0) endGame();
     }, 4000);
 
-    // Decrease social every 8 seconds
+    // Social decays every 8s
     setInterval(() => {
-        if (playButtonClicked) {
-            performAction('decreaseSocial', 100);
-            checkGameOver();
-        }
+        if (!running) return;
+        const amt = Math.min(10, Math.max(1, Math.floor(elapsedSeconds / 8)));
+        social = Math.max(0, social - amt);
+        syncBar('social', amt);
+        setBar('social', social);
+        if (social === 0) endGame();
     }, 8000);
 }
 
-// Update the stopwatch display
-function updateStopwatch() {
-    const stopwatch = document.getElementById('elapsed-timer');
-    const hours = Math.floor(elapsedSeconds / 3600);
-    const minutes = Math.floor((elapsedSeconds % 3600) / 60);
-    const seconds = elapsedSeconds % 60;
-
-    const formattedHours = formatTime(hours);
-    const formattedMinutes = formatTime(minutes);
-    const formattedSeconds = formatTime(seconds);
-
-    stopwatch.textContent = `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+// Keep backend in sync
+function syncBar(bar, amount) {
+    fetch('/decrease_bars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bar, amount })
+    });
 }
 
-// Format time to ensure two-digit display
-function formatTime(value) {
-    return value < 10 ? `0${value}` : value;
+function doAction(action, stat) {
+    if (!running) return;
+    fetch(`/perform_action/${action}`)
+        .then(r => r.json())
+        .then(data => {
+            updateBars(data);
+            if (stat === 'hunger') {
+                hungerClicks++;
+                document.getElementById('hunger-clicks').textContent = hungerClicks;
+                log('ate food (+20 hunger)');
+            } else if (stat === 'thirst') {
+                thirstClicks++;
+                document.getElementById('thirst-clicks').textContent = thirstClicks;
+                log('drank water (+20 thirst)');
+            } else if (stat === 'social') {
+                socialClicks++;
+                document.getElementById('social-clicks').textContent = socialClicks;
+                log('called a friend (+20 social)');
+            }
+        });
 }
 
-function runSim() {
+function startSim() {
+    if (simRunning || !running) return;
+    simRunning = true;
+    document.getElementById('sim-btn').disabled = true;
+    log('⚡ simulator activated');
+
+    const actions = [
+        { action: 'eat',   stat: 'hunger' },
+        { action: 'drink', stat: 'thirst' },
+        { action: 'call',  stat: 'social' }
+    ];
+
     setInterval(() => {
-        const randomAction = Math.floor(Math.random() * 3); // Generate random number from 0 to 2
-        switch (randomAction) {
-            case 0:
-                performAction('increaseHunger', 20);
-                hungerClicks++; // Increment hunger clicks
-                calculateClickRate('Hunger', lastHungerClickTime);
-                lastHungerClickTime = Date.now();
-                document.getElementById('hunger-counter').textContent = hungerClicks; // Update displayed counter
-                break;
-            case 1:
-                performAction('increaseThirst', 20);
-                thirstClicks++; // Increment thirst clicks
-                calculateClickRate('Thirst', lastThirstClickTime);
-                lastThirstClickTime = Date.now();
-                document.getElementById('thirst-counter').textContent = thirstClicks; // Update displayed counter
-                break;
-            case 2:
-                performAction('increaseSocial', 20);
-                socialClicks++; // Increment social clicks
-                calculateClickRate('Social', lastSocialClickTime);
-                lastSocialClickTime = Date.now();
-                document.getElementById('social-counter').textContent = socialClicks; // Update displayed counter
-                break;
-            default:
-                break;
-        }
-    }, 5000); // Run simulation every 5 seconds
-}
-// Perform actions (e.g., decrease hunger, thirst, social)
-function performAction(action, value) {
-    const maxDecrease = 10; // Maximum percentage to decrease
-
-    let newHunger = parseFloat(document.getElementById('hunger-fill').style.width);
-    let newThirst = parseFloat(document.getElementById('thirst-fill').style.width);
-    let newSocial = parseFloat(document.getElementById('social-fill').style.width);
-
-    const decreaseAmountHunger = Math.min(maxDecrease, Math.floor(elapsedSeconds / 6));
-    const decreaseAmountThirst = Math.min(maxDecrease, Math.floor(elapsedSeconds / 4));
-    const decreaseAmountSocial = Math.min(maxDecrease, Math.floor(elapsedSeconds / 8));
-
-    if (action === 'decreaseHunger') {
-        newHunger = Math.max(0, newHunger - decreaseAmountHunger);
-    }
-
-    if (action === 'decreaseThirst') {
-        newThirst = Math.max(0, newThirst - decreaseAmountThirst);
-    }
-
-    if (action === 'decreaseSocial') {
-        newSocial = Math.max(0, newSocial - decreaseAmountSocial);
-    }
-
-    if (action === 'increaseHunger') {
-        newHunger = Math.min(100, newHunger + value);
-    }
-
-    if (action === 'increaseThirst') {
-        newThirst = Math.min(100, newThirst + value);
-    }
-
-    if (action === 'increaseSocial') {
-        newSocial = Math.min(100, newSocial + value);
-    }
-
-    updateBars({ hunger: newHunger, thirst: newThirst, social: newSocial });
+        if (!running) return;
+        const pick = actions[Math.floor(Math.random() * 3)];
+        doAction(pick.action, pick.stat);
+    }, 5000);
 }
 
-// Stop the game, display "GAME OVER!", and hide the play button
-function stopGame() {
-    playButtonClicked = false;
-    document.getElementById('elapsed-timer').textContent = "GAME OVER!";
-    document.getElementById('elapsed-timer').style.color = "red";
+function endGame() {
+    if (!running) return;
+    running = false;
 
-    // Remove the play button
-    const playButton = document.getElementById('play-button');
-    playButton.classList.add('hidden');
-    playButton.removeEventListener('click', startIntervals);
+    const timerEl = document.getElementById('timer-display');
+    timerEl.classList.add('game-over');
+    timerEl.textContent = 'GAME OVER';
+
+    actionBtns.forEach(id => document.getElementById(id).disabled = true);
+    document.getElementById('sim-btn').disabled = true;
+
+    document.getElementById('final-time').textContent = currentTimestamp();
+
+    setTimeout(() => {
+        document.getElementById('game-over-overlay').classList.add('show');
+    }, 800);
 }
-
-// Calculate and display click rate
-function calculateClickRate(button, lastClickTime) {
-    const currentTime = Date.now();
-    const timeDifference = currentTime - lastClickTime;
-    const clickRate = timeDifference > 0 ? (1000 / timeDifference).toFixed(2) + " clicks/sec" : "N/A";
-
-    const clickRateContainer = document.getElementById('click-rate-container');
-    clickRateContainer.textContent = `Click rate (${button}): ${clickRate}`;
-}
-
-// Event listeners for the action buttons
-document.getElementById('increase-hunger-button').addEventListener('click', () => {
-    performAction('increaseHunger', 20);
-    hungerCounter++; // Increment hunger counter
-    document.getElementById('hunger-counter').textContent = hungerCounter; // Update displayed counter
-});
-
-document.getElementById('increase-thirst-button').addEventListener('click', () => {
-    performAction('increaseThirst', 20);
-    thirstCounter++; // Increment thirst counter
-    document.getElementById('thirst-counter').textContent = thirstCounter; // Update displayed counter
-});
-
-document.getElementById('increase-social-button').addEventListener('click', () => {
-    performAction('increaseSocial', 20);
-    socialCounter++; // Increment social counter
-    document.getElementById('social-counter').textContent = socialCounter; // Update displayed counter
-});
-
-// Event listener for the Simulator button
-document.getElementById('simulator-button').addEventListener('click', () => {
-    runSim();
-});
-
-
